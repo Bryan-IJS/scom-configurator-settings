@@ -264,7 +264,7 @@ export default class ConfiguratorSettings extends Module {
     }
   }
 
-  private renderTab = (tabs: Tabs, target: any, data: any, title: string) => {
+  private renderTab = async (tabs: Tabs, target: any, data: any, title: string) => {
     if (target) {
       const opt = {
         jsonSchema: target.userInputDataSchema,
@@ -275,7 +275,11 @@ export default class ConfiguratorSettings extends Module {
       tab.classList.add('custom-settings--ui');
       tabs.add({ caption: title, icon: target.icon ? { name: target.icon, fill: Theme.colors.primary.contrastText } : undefined, children: tab });
       if (target.customUI) {
-        const element = target.customUI.render({ ...data }, (result: boolean, data: any) => this.onConfirm(result, data, target));
+        const element = await target.customUI.render(
+          { ...data }, 
+          (result: boolean, data: any) => this.onConfirm(result, data, target),
+          (result: boolean, data: any) => this.onChange(result, data, target),
+        );
         tab.append(element);
       } else {
         const self = this;
@@ -319,16 +323,20 @@ export default class ConfiguratorSettings extends Module {
     const tag = builderTarget?.getTag ? await builderTarget.getTag() : item.tag;
     const actions = builderTarget?.getActions() || [];
     const general = actions.find((v: any) => ['Settings', 'General'].includes(v.name));
+    const dataSource = actions.find((v: any) => ['Data Source', 'Data'].includes(v.name));
     const commissions = actions.find((v: any) => ['Commissions'].includes(v.name));
     const theme = actions.find((v: any) => ['Theme Settings', 'Theme'].includes(v.name));
     const advanced = actions.find((v: any) => ['Advanced'].includes(v.name));
     const tabs = await Tabs.create();
     this.pnlTabs.clearInnerHTML();
     this.pnlTabs.appendChild(tabs);
-    this.renderTab(tabs, general, data, 'General');
-    this.renderTab(tabs, commissions, data, 'Commissions');
-    this.renderTab(tabs, theme, tag, 'Theme');
-    this.renderTab(tabs, advanced, data, 'Advanced');
+    let promises = [];
+    promises.push(this.renderTab(tabs, general, data, 'General'));
+    promises.push(this.renderTab(tabs, dataSource, data, 'Data'));
+    promises.push(this.renderTab(tabs, commissions, data, 'Commissions'));
+    promises.push(this.renderTab(tabs, theme, tag, 'Theme'));
+    promises.push(this.renderTab(tabs, advanced, data, 'Advanced'));
+    await Promise.all(promises);
     tabs.activeTabIndex = 0;
   }
 

@@ -383,7 +383,7 @@ define("@scom/scom-configurator-settings", ["require", "exports", "@ijstech/comp
                     ;
                 }
             };
-            this.renderTab = (tabs, target, data, title) => {
+            this.renderTab = async (tabs, target, data, title) => {
                 if (target) {
                     const opt = {
                         jsonSchema: target.userInputDataSchema,
@@ -394,7 +394,7 @@ define("@scom/scom-configurator-settings", ["require", "exports", "@ijstech/comp
                     tab.classList.add('custom-settings--ui');
                     tabs.add({ caption: title, icon: target.icon ? { name: target.icon, fill: Theme.colors.primary.contrastText } : undefined, children: tab });
                     if (target.customUI) {
-                        const element = target.customUI.render(Object.assign({}, data), (result, data) => this.onConfirm(result, data, target));
+                        const element = await target.customUI.render(Object.assign({}, data), (result, data) => this.onConfirm(result, data, target), (result, data) => this.onChange(result, data, target));
                         tab.append(element);
                     }
                     else {
@@ -438,16 +438,20 @@ define("@scom/scom-configurator-settings", ["require", "exports", "@ijstech/comp
                 const tag = (builderTarget === null || builderTarget === void 0 ? void 0 : builderTarget.getTag) ? await builderTarget.getTag() : item.tag;
                 const actions = (builderTarget === null || builderTarget === void 0 ? void 0 : builderTarget.getActions()) || [];
                 const general = actions.find((v) => ['Settings', 'General'].includes(v.name));
+                const dataSource = actions.find((v) => ['Data Source', 'Data'].includes(v.name));
                 const commissions = actions.find((v) => ['Commissions'].includes(v.name));
                 const theme = actions.find((v) => ['Theme Settings', 'Theme'].includes(v.name));
                 const advanced = actions.find((v) => ['Advanced'].includes(v.name));
                 const tabs = await components_3.Tabs.create();
                 this.pnlTabs.clearInnerHTML();
                 this.pnlTabs.appendChild(tabs);
-                this.renderTab(tabs, general, data, 'General');
-                this.renderTab(tabs, commissions, data, 'Commissions');
-                this.renderTab(tabs, theme, tag, 'Theme');
-                this.renderTab(tabs, advanced, data, 'Advanced');
+                let promises = [];
+                promises.push(this.renderTab(tabs, general, data, 'General'));
+                promises.push(this.renderTab(tabs, dataSource, data, 'Data'));
+                promises.push(this.renderTab(tabs, commissions, data, 'Commissions'));
+                promises.push(this.renderTab(tabs, theme, tag, 'Theme'));
+                promises.push(this.renderTab(tabs, advanced, data, 'Advanced'));
+                await Promise.all(promises);
                 tabs.activeTabIndex = 0;
             };
         }
