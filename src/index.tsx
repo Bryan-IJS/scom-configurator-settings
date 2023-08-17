@@ -18,7 +18,7 @@ import {
   Button
 } from '@ijstech/components';
 import { configStyle } from './index.css'
-import { getComponent, commandHistory, IConfig, ISaveConfigData } from './global/index';
+import { getComponent, commandHistory, IConfig, ISaveConfigData, fetchWidgetProperties } from './global/index';
 
 const Theme = Styles.Theme.ThemeVars;
 
@@ -188,6 +188,7 @@ export default class ConfiguratorSettings extends Module {
   private closeDetail = () => {
     this.mdSettings.visible = false;
     this.pnlPreview.clearInnerHTML();
+    this.pnlTabs.clearInnerHTML();
   }
 
   showDetail = async (item: any) => {
@@ -202,21 +203,26 @@ export default class ConfiguratorSettings extends Module {
     this.pnlPreview.clearInnerHTML();
     this.pnlPreview.appendChild(<i-label caption="Preview" font={{ size: '16px', bold: true }} margin={{ bottom: 10 }} />);
     this.pnlPreview.appendChild(containerModule);
-    await containerModule.ready();
-    if (containerModule?.getConfigurators) {
-      const configurator = containerModule.getConfigurators().find((configurator: any) => configurator.target === "Builders");
-      if (configurator?.setData) {
-        await configurator.setData(item.properties);
-      }
-      if (configurator?.setTag && (item.tag || this.parentTags)) {
-        await configurator.setTag({ ...this.parentTags, ...item.tag });
-      }
-      this.renderSettings(configurator, item);
-    } else {
-      this.builderTarget = null;
-      this.pnlTabs.clearInnerHTML();
-    }
     this.mdSettings.visible = true;
+    setTimeout(async () => {
+      await containerModule.ready();
+      if (containerModule?.getConfigurators) {
+        const configurator = containerModule.getConfigurators().find((configurator: any) => configurator.target === "Builders");
+        if (item.dataUri) {
+          item.properties = await fetchWidgetProperties(item.dataUri);
+        }
+        if (configurator?.setData) {
+          await configurator.setData(item.properties);
+        }
+        if (configurator?.setTag && (item.tag || this.parentTags)) {
+          await configurator.setTag({ ...this.parentTags, ...item.tag });
+        }
+        this.renderSettings(configurator, item);
+      } else {
+        this.builderTarget = null;
+        this.pnlTabs.clearInnerHTML();
+      }
+    });
   }
 
   private onChange = (result: boolean, data: any, action: any) => {

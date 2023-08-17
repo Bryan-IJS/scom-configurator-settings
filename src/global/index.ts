@@ -3,7 +3,8 @@ export interface IConfig {
   path: string;
   title: string;
   description?: string;
-  properties: {[key: string]: any }
+  dataUri?: string;
+  properties?: {[key: string]: any }
 }
 
 export interface ISaveConfigData {

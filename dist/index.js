@@ -141,7 +141,7 @@ define("@scom/scom-configurator-settings/index.css.ts", ["require", "exports", "
 define("@scom/scom-configurator-settings/global/utils.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.getComponent = exports.commandHistory = exports.CommandHistory = void 0;
+    exports.fetchWidgetProperties = exports.getComponent = exports.commandHistory = exports.CommandHistory = void 0;
     class CommandHistory {
         constructor() {
             this.commands = [];
@@ -182,6 +182,13 @@ define("@scom/scom-configurator-settings/global/utils.ts", ["require", "exports"
         return element;
     };
     exports.getComponent = getComponent;
+    const fetchWidgetProperties = async (dataUri) => {
+        let result;
+        let response = await fetch(`/ipfs/${dataUri}`);
+        result = await response.json();
+        return result;
+    };
+    exports.fetchWidgetProperties = fetchWidgetProperties;
 });
 define("@scom/scom-configurator-settings/global/index.ts", ["require", "exports", "@scom/scom-configurator-settings/global/utils.ts"], function (require, exports, utils_1) {
     "use strict";
@@ -304,6 +311,7 @@ define("@scom/scom-configurator-settings", ["require", "exports", "@ijstech/comp
             this.closeDetail = () => {
                 this.mdSettings.visible = false;
                 this.pnlPreview.clearInnerHTML();
+                this.pnlTabs.clearInnerHTML();
             };
             this.showDetail = async (item) => {
                 this.currentId = item.id;
@@ -317,22 +325,27 @@ define("@scom/scom-configurator-settings", ["require", "exports", "@ijstech/comp
                 this.pnlPreview.clearInnerHTML();
                 this.pnlPreview.appendChild(this.$render("i-label", { caption: "Preview", font: { size: '16px', bold: true }, margin: { bottom: 10 } }));
                 this.pnlPreview.appendChild(containerModule);
-                await containerModule.ready();
-                if (containerModule === null || containerModule === void 0 ? void 0 : containerModule.getConfigurators) {
-                    const configurator = containerModule.getConfigurators().find((configurator) => configurator.target === "Builders");
-                    if (configurator === null || configurator === void 0 ? void 0 : configurator.setData) {
-                        await configurator.setData(item.properties);
-                    }
-                    if ((configurator === null || configurator === void 0 ? void 0 : configurator.setTag) && (item.tag || this.parentTags)) {
-                        await configurator.setTag(Object.assign(Object.assign({}, this.parentTags), item.tag));
-                    }
-                    this.renderSettings(configurator, item);
-                }
-                else {
-                    this.builderTarget = null;
-                    this.pnlTabs.clearInnerHTML();
-                }
                 this.mdSettings.visible = true;
+                setTimeout(async () => {
+                    await containerModule.ready();
+                    if (containerModule === null || containerModule === void 0 ? void 0 : containerModule.getConfigurators) {
+                        const configurator = containerModule.getConfigurators().find((configurator) => configurator.target === "Builders");
+                        if (item.dataUri) {
+                            item.properties = await (0, index_1.fetchWidgetProperties)(item.dataUri);
+                        }
+                        if (configurator === null || configurator === void 0 ? void 0 : configurator.setData) {
+                            await configurator.setData(item.properties);
+                        }
+                        if ((configurator === null || configurator === void 0 ? void 0 : configurator.setTag) && (item.tag || this.parentTags)) {
+                            await configurator.setTag(Object.assign(Object.assign({}, this.parentTags), item.tag));
+                        }
+                        this.renderSettings(configurator, item);
+                    }
+                    else {
+                        this.builderTarget = null;
+                        this.pnlTabs.clearInnerHTML();
+                    }
+                });
             };
             this.onChange = (result, data, action) => {
                 if (result) {

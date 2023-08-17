@@ -18,6 +18,7 @@ declare module "@scom/scom-configurator-settings/global/utils.ts" {
     }
     export const commandHistory: CommandHistory;
     export const getComponent: (path: string) => Promise<HTMLElement>;
+    export const fetchWidgetProperties: (dataUri: string) => Promise<any>;
 }
 /// <amd-module name="@scom/scom-configurator-settings/global/index.ts" />
 declare module "@scom/scom-configurator-settings/global/index.ts" {
@@ -26,7 +27,8 @@ declare module "@scom/scom-configurator-settings/global/index.ts" {
         path: string;
         title: string;
         description?: string;
-        properties: {
+        dataUri?: string;
+        properties?: {
             [key: string]: any;
         };
     }

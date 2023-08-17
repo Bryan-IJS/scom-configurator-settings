@@ -47,3 +47,10 @@ export const getComponent = async (path: string) => {
   // const element = document.createElement(elementName);
   return element;
 }
+
+export const fetchWidgetProperties = async (dataUri: string) => {
+  let result;
+  let response = await fetch(`/ipfs/${dataUri}`);
+  result = await response.json();
+  return result;
+}
